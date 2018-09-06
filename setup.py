@@ -126,6 +126,21 @@ class MyUi(QMainWindow, Ui_MainWindow):
         self.pushButton_SaveSignal.clicked.connect(self.SaveSignal)
 
 
+
+###    Table 4 ###########################################################################
+
+
+
+        ## Open Background's and Signal's Moment(Cumulant) Files, which used to plot Normalized Image
+        self.pushButton_OpenBackgroundMC.clicked.connect(self.OpenBackgroundMC)
+        self.pushButton_OpenSignalMC.clicked.connect(self.OpenSignalMC)
+
+        self.pushButton_ImageProcess.clicked.connect(self.ImageProcess)
+
+        self.pushButton_NOderImage.clicked.connect(self.NOderImage)
+        self.pushButton_NOderImageNorm.clicked.connect(self.NOderImageNorm)
+
+
     def DataBase(self):
         self.MomentBackground = {}
         self.CumulantBackground = {}
@@ -461,6 +476,7 @@ class MyUi(QMainWindow, Ui_MainWindow):
             print(fileName)
         try:
             self.Background_dataprocess = DataProcess(fileName)
+            self.Background_Average = self.Background_dataprocess.Average_Fluctuation()
         except:
             print("Load file fall, Plz open file again ... ")
 
@@ -472,6 +488,7 @@ class MyUi(QMainWindow, Ui_MainWindow):
             print(fileName)
         try:
             self.Signal_dataprocess = DataProcess(fileName)
+            self.Signal_Average = self.Signal_dataprocess.Average_Fluctuation()
         except:
             print("Load file fall, Plz open file again ... ")
 
@@ -489,12 +506,13 @@ class MyUi(QMainWindow, Ui_MainWindow):
 
         try:
                ## befor calculate the High Order moment, we need to get the Aaverage and Fluctuation
-            self.Background_dataprocess.Average_Fluctuation()
-            NorderOrdImaging = self.Background_dataprocess.NOrder(NorderValue)
-
+            if NorderValue == 1:
+                NorderOrdImaging = self.Background_Average
+            else:
+                NorderOrdImaging = self.Background_dataprocess.NOrder(NorderValue)
+                
             self.MomentBackground["{}".format(NorderValue)] = NorderOrdImaging
             #imageData = np.array([[1, 2, 3], [4, 5, 6]], np.int32)  # used for testing
-
 
             myplotSt = self.widget_Background.mpl
             cax = myplotSt.axes.imshow(NorderOrdImaging) #, clim=(0.0, 10))
@@ -510,19 +528,173 @@ class MyUi(QMainWindow, Ui_MainWindow):
 
 
     def NOderMomentSignal(self):
-        pass
+        #def inner_NOderMemontBackground():
+        NorderValue = self.spinBox_NOderMomentSignal.value()
+        print(self.Signal_dataprocess)
+
+        try:
+            self.corbarSignal.remove()   # here "self." must be added !
+        except:
+            pass
+
+        try:
+               ## befor calculate the High Order moment, we need to get the Aaverage and Fluctuation
+            if NorderValue == 1:
+                NorderOrdImaging = self.Signal_Average
+            else:
+                NorderOrdImaging = self.Signal_dataprocess.NOrder(NorderValue)
+                
+            self.MomentSignal["{}".format(NorderValue)] = NorderOrdImaging
+            #imageData = np.array([[1, 2, 3], [4, 5, 6]], np.int32)  # used for testing
+
+            myplotSt = self.widget_Signal.mpl
+            cax = myplotSt.axes.imshow(NorderOrdImaging) #, clim=(0.0, 10))
+            myplotSt.axes.set_title('Title')
+
+            # Add colorbar, make sure to specify tick locations to match desired ticklabels
+            self.corbarSignal = myplotSt.fig.colorbar(cax)  #, ticks=[0, 1])
+
+            #plt.close()
+            #return inner_NOderMemontBackground
+        except:
+            print("Signal file not opened, Plz open Signal file . . . ")
 
             
     def SaveBackground(self):
-        pass
-        #np.save("MomentBackground", self.MomentBackground)
+        np.save("MomentBackground", self.MomentBackground)
+        m1 = self.MomentBackground["1"]
+        m2 = self.MomentBackground["2"]
+        m3 = self.MomentBackground["3"]
+        m4 = self.MomentBackground["4"]
+        m5 = self.MomentBackground["5"]
+        m6 = self.MomentBackground["6"]
+
+        c4 = m4 - 3 * m2 * m2
+        c5 = m5 - 10 * m3 * m2
+        c6 = m6 - 15 * m4 * m2 - 10 * m3 * m3 +  30 * m2 * m2 * m2 
+
+        cumulant  = {"6" : c6, "5" : c5, "4" : c4, "3": m3, "2": m2, "1": m1 }
+
+        np.save("CumulantBackground", cumulant)
+
+
+        print("save MomentBackground & CumulantBackground Success !")
         #np.save("CumulantBackground", self.CumulantBackground)
 
 
     def SaveSignal(self):
-        pass
-        #np.save("MomentSignal", self.MomentBackground)
+        np.save("MomentSignal", self.MomentSignal)
+        m1 = self.MomentSignal["1"]
+        m2 = self.MomentSignal["2"]
+        m3 = self.MomentSignal["3"]
+        m4 = self.MomentSignal["4"]
+        m5 = self.MomentSignal["5"]
+        m6 = self.MomentSignal["6"]
+
+        c4 = m4 - 3 * m2 * m2
+        c5 = m5 - 10 * m3 * m2
+        c6 = m6 - 15 * m4 * m2 - 10 * m3 * m3 +  30 * m2 * m2 * m2 
+
+        cumulant  = {"6" : c6, "5" : c5, "4" : c4, "3": m3, "2": m2, "1": m1 }
+
+        np.save("CumulantSignal", cumulant)
+        print("save MomentSignal & CumulantSignal Success !")
         #np.save("CumulantSignal", self.CumulantBackground)
+
+
+
+    def OpenBackgroundMC(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        fileName, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","All Files (*);;Python Files (*.npy)", options=options)
+        if fileName:
+            print(fileName)
+        try:
+            self.BackgroundMC = np.load(fileName)
+        except:
+            print("Load BackgroundMoment file fall, Plz open file again ... ")
+    
+
+    def OpenSignalMC(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        fileName, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","All Files (*);;Python Files (*.npy)", options=options)
+        if fileName:
+            print(fileName)
+        try:
+            self.SignalMC = np.load(fileName)
+        except:
+            print("Load SignalMoment file fall, Plz open file again ... ")
+
+    def ImageProcess(self):
+
+        self.imageNor = {}
+
+        for i in range(1, 7):
+            print(i)
+            print(np.shape(self.SignalMC.item().get("{}".format(i))))
+            print(np.shape(self.BackgroundMC.item().get("{}".format(i))))
+
+
+            self.imageNor["{}".format(i)] = self.SignalMC.item().get("{}".format(i)) / self.BackgroundMC.item().get("{}".format(i))
+            self.imageNor["{}".format(i)] = self.imageNor["{}".format(i)] / np.amax(self.imageNor["{}".format(i)])
+
+
+    def NOderImage(self):
+
+        #def inner_NOderMemontBackground():
+        NorderValue = self.spinBox_NOderImage.value()
+        print(NorderValue)
+
+        try:
+            self.corbarImage.remove()   # here "self." must be added !
+        except:
+            pass
+
+        try:
+                
+            NorderOrdImaging = self.SignalMC.item().get("{}".format(NorderValue)) / np.amax( self.SignalMC.item().get("{}".format(NorderValue)))
+            #imageData = np.array([[1, 2, 3], [4, 5, 6]], np.int32)  # used for testing
+
+            myplotSt = self.widget_NOderImage.mpl
+            cax = myplotSt.axes.imshow(NorderOrdImaging) #, clim=(0.0, 10))
+            myplotSt.axes.set_title('Title')
+
+            # Add colorbar, make sure to specify tick locations to match desired ticklabels
+            self.corbarImage = myplotSt.fig.colorbar(cax)  #, ticks=[0, 1])
+
+            #plt.close()
+            #return inner_NOderMemontBackground
+        except:
+            print("files not opened, Plz open Signal file . . . ")
+
+
+    def NOderImageNorm(self):
+
+        #def inner_NOderMemontBackground():
+        NorderValue = self.spinBox_NOderImageNorm.value()
+        print(NorderValue)
+
+        try:
+            self.corbarImageNorm.remove()   # here "self." must be added !
+        except:
+            pass
+
+        #try:
+        NorderOrdImaging = self.imageNor["{}".format(NorderValue)]
+        #imageData = np.array([[1, 2, 3], [4, 5, 6]], np.int32)  # used for testing
+
+        myplotSt = self.widget_NOderImageNorm.mpl
+        cax = myplotSt.axes.imshow(NorderOrdImaging) #, clim=(0.0, 10))
+        myplotSt.axes.set_title('Title')
+
+        # Add colorbar, make sure to specify tick locations to match desired ticklabels
+        self.corbarImageNorm = myplotSt.fig.colorbar(cax)  #, ticks=[0, 1])
+
+            #plt.close()
+            #return inner_NOderMemontBackground
+        #except:
+        #    print("files not opened, Plz open Signal file . . . ")
 
 
 
